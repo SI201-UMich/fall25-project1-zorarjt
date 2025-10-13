@@ -3,7 +3,7 @@
 # Email: zrtucker@umich.edu
 # Worked Alone
 # GenAI Use: Used ChatGPT to generate test case ideas and plain-English descriptions of functions to implement
-# Also used for percentages and temperature formatting
+# Also used for percentages and temperature formatting & debugging of type/value errors
 
 import unittest
 import os
@@ -13,14 +13,42 @@ csv_file = "crop_yield.csv"
 
 # only take region, crop, and temperature_celcius columns
 def load_crop_data(csv_file):
-    pass
+    if not os.path.exists(csv_file):
+        return None
+    with open(csv_file, 'r') as file:
+        lines = file.readlines()
+
+    crops = []
+    for line in lines[1:]:
+        parts = line.strip().split(',')
+        if len(parts) < 3:
+            continue
+        try:
+            temp = float(parts[2].strip())
+        except ValueError:
+            continue
+
+        crops.append({
+            'Region': parts[0].strip(),
+            'Crop': parts[1].strip(),
+            'Temperature_Celsius': temp
+        })
+    return crops
 
 def get_crop_data(crops):
-    pass
+    if not crops:
+        return {'Region': [], 'Crop': [], 'Temperature_Celsius': []}
+    crop_entries = {'Region': [], 'Crop': [], 'Temperature_Celsius': []}
+    for entry in crops:
+        crop_entries['Region'].append(entry['Region'])
+        crop_entries['Crop'].append(entry['Crop'])
+        crop_entries['Temperature_Celsius'].append(entry['Temperature_Celsius'])
+    return crop_entries
 
 # What percentage of rice is grown in the South?
 def calculate_rice_percentage(crops_entries):
     pass
+    
 
 # What is the average temperature (°C) that Maize was grown in?
 def calculate_average_temperature(crop_entries):
@@ -35,7 +63,7 @@ def generate_report(rice_percentage, avg_temp):
 
 class TestCropData(unittest.TestCase):
     def setUp(self):
-        with open("crop_data.csv", mode="w", newline='') as file:
+        with open("crop_sample.csv", mode="w", newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["Region", "Crop", "Temperature_Celsius"])
             writer.writerow(["North", "Rice", "25.0"])
@@ -46,12 +74,12 @@ class TestCropData(unittest.TestCase):
             writer.writerow(["South", "Maize", "NA"])
 
     def test_load_crop_data_valid_file(self):
-        crops = load_crop_data("crop_data.csv")
-        self.assertEqual(len(crops), 6)
-        self.assertEqual(crops[0], {"Region": "North", "Crop": "Rice", "Temperature_Celsius": "25.0"})
-        self.assertEqual(crops[1], {"Region": "South", "Crop": "Rice", "Temperature_Celsius": "0"})
+        crops = load_crop_data("crop_sample.csv")
+        self.assertEqual(len(crops), 4)
+        self.assertEqual(crops[0], {"Region": "North", "Crop": "Rice", "Temperature_Celsius": 25.0})
+        self.assertEqual(crops[1], {"Region": "South", "Crop": "Rice", "Temperature_Celsius": 0.0})
     def test_load_crop_data_invalid_temperature(self):
-        crops = load_crop_data("crop_data.csv")
+        crops = load_crop_data("crop_sample.csv")
         temps = [entry['Temperature_Celsius'] for entry in crops]
         self.assertNotIn("NA", temps)
         self.assertTrue(all(isinstance(t, float) for t in temps))
@@ -65,11 +93,11 @@ class TestCropData(unittest.TestCase):
         os.remove("empty.csv")
     
     def test_get_crop_data_valid(self):
-        crops = load_crop_data("crop_data.csv")
+        crops = load_crop_data("crop_sample.csv")
         data = get_crop_data(crops)
         self.assertEqual(len(data['Region']), len(crops)) 
     def test_get_crop_data_fields(self):
-        crops = load_crop_data("crop_data.csv")
+        crops = load_crop_data("crop_sample.csv")
         data = get_crop_data(crops)
         for key in ['Region', 'Crop', 'Temperature_Celsius']:
             self.assertIn(key, data)
@@ -77,10 +105,10 @@ class TestCropData(unittest.TestCase):
         result = get_crop_data([])
         self.assertEqual(result, {'Region': [], 'Crop': [], 'Temperature_Celsius': []})
     def test_crop_data_none(self):
-        self.assertIsNone(get_crop_data(None))
+        self.assertEqual(get_crop_data(None), {'Region': [], 'Crop': [], 'Temperature_Celsius': []})
     
     def test_calculate_rice_percentage_norm(self):
-        crops = load_crop_data("crop_data.csv")
+        crops = load_crop_data("crop_sample.csv")
         result = calculate_rice_percentage(crops)
         self.assertEqual(result, "50.0%")
     def test_calculate_rice_percentage_no_rice(self):
@@ -96,7 +124,7 @@ class TestCropData(unittest.TestCase):
         self.assertEqual(result, "100.0%")
 
     def test_caculate_average_temperature_norm(self):
-        crops = load_crop_data("crop_data.csv")
+        crops = load_crop_data("crop_sample.csv")
         result = calculate_average_temperature(crops)
         self.assertEqual(result, "28.0°C")
     def test_calculate_average_temperature_no_maize(self):
@@ -151,7 +179,8 @@ class TestCropData(unittest.TestCase):
             self.assertNotIn("28.0°C", content)
         os.remove("crop_report.txt")
 
-#def main():
-    #unittest.main()
-#if __name__ == "__main__":
-    #main()
+def main():
+    unittest.main()
+
+if __name__ == "__main__":
+    main()
