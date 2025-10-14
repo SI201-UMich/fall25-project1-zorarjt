@@ -1,0 +1,7 @@
+Region,Crop,Temperature_Celsius
+North,Rice,25.0
+South,Rice,0
+East,Maize,NA
+West,Wheat,15.0
+South,Maize,28.0
+South,Maize,NA
